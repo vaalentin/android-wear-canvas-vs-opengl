@@ -1,10 +1,14 @@
 package com.example.vaalentin.canvasVsOpenGL;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
+import android.opengl.GLUtils;
 import android.support.wearable.watchface.Gles2WatchFaceService;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -37,6 +41,8 @@ public class OpenGL extends Gles2WatchFaceService {
         private int mInfluencesLoc;
 
         private int mProgram;
+
+        private int mTextures[] = new int[1];
 
         private int mTimeLoc;
         private float mTime = 0f;
@@ -94,11 +100,16 @@ public class OpenGL extends Gles2WatchFaceService {
                     + "attribute float aInfluence;"
                     + ""
                     + "uniform float uTime;"
+                    + "uniform sampler2D uTexture;"
                     + ""
                     + "varying float vBrightness;"
                     + ""
                     + "void main() {"
-                    + "  vBrightness = aBrightness * map(sin(uTime * aInfluence), -1.0, 1.0, 0.0, 1.0);"
+                    + "  vec2 uv = aPosition;"
+                    + "  uv.y = 1.0 - uv.y;"
+                    + "  vec4 texColor = texture2D(uTexture, uv);"
+                    + "  vBrightness = aBrightness * map(sin(uTime * aInfluence), -1.0, 1.0, 0.3, 1.0);"
+                    + "  vBrightness *= 1.0 - texColor.r;"
                     + "  gl_PointSize = 4.0;"
                     + "  vec2 position = aPosition * 2.0 - 1.0;"
                     + "  gl_Position = vec4(position, 0.0, 1.0);"
@@ -141,6 +152,22 @@ public class OpenGL extends Gles2WatchFaceService {
             mInfluencesLoc = GLES20.glGetAttribLocation(mProgram, "aInfluence");
 
             mTimeLoc = GLES20.glGetUniformLocation(mProgram, "uTime");
+
+            // textures
+            InputStream stream = getResources().openRawResource(R.raw.texture);
+            Bitmap bitmap = BitmapFactory.decodeStream(stream);
+
+            GLES20.glGenTextures(1, mTextures, 0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextures[0]);
+
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+
+            bitmap.recycle();
         }
 
         @Override
