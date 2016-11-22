@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">OpenGL Watchface</string>
+    <string name="watchface_opengl_name">OpenGL</string>
+    <string name="watchface_canvas_name">Canvas</string>
+</resources>
